@@ -59,9 +59,6 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [SOCIAL_IMAGE_PATH],
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
   robots: {
     index: true,
     follow: true,
