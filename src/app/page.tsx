@@ -7,6 +7,7 @@ import { useSessionStore } from "@/state/session-store";
 import { useTimerStore } from "@/state/timer-store";
 import { formatDuration } from "@/lib/timer-utils";
 import { formatCurrency, getCurrencySymbol, splitCost } from "@/lib/currency";
+import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
 
 export default function Home() {
   const session = useSessionStore((state) => state.session);
@@ -27,6 +28,7 @@ export default function Home() {
   const resetTimer = useTimerStore((state) => state.reset);
   const snapshot = useTimerStore((state) => state.finalSnapshot);
   const [copied, setCopied] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false);
 
   useCostTicker();
 
@@ -43,6 +45,14 @@ export default function Home() {
   const isPaused = status === "paused";
   const canToggle = status === "running" || status === "paused";
 
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    const frame = requestAnimationFrame(() => {
+      setCanNativeShare(typeof navigator.share === "function");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const sharePayload = useMemo(() => {
     if (!snapshot) return "";
     const duration = formatDuration(snapshot.elapsedSeconds);
@@ -52,8 +62,9 @@ export default function Home() {
       snapshot.currency,
       2,
     );
-    return `Meeting burned ${total} in ${duration} with ${snapshot.participants} attendees (${perAttendee} each).`;
+    return `Meeting burned ${total} in ${duration} with ${snapshot.participants} attendees (${perAttendee} each). Track your next meeting with BurnRate: ${SITE_URL}`;
   }, [snapshot]);
+  const shareTitle = `${SITE_NAME} meeting summary`;
 
   const handleToggle = () => {
     if (isPaused) {
@@ -71,6 +82,24 @@ export default function Home() {
       setTimeout(() => setCopied(false), 1600);
     } catch (error) {
       console.error("Copy failed", error);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!sharePayload || !canNativeShare || typeof navigator.share !== "function") {
+      return;
+    }
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text: sharePayload,
+        url: SITE_URL,
+      });
+    } catch (error) {
+      if ((error as DOMException)?.name === "AbortError") {
+        return;
+      }
+      console.error("Native share failed", error);
     }
   };
 
@@ -199,18 +228,29 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-white/15 bg-black/30 p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-white/60">
+            <div className="space-y-4 rounded-2xl border border-white/15 bg-black/30 p-6">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-white/60">
+                <div className="flex-1">
                   Shareable summary
                 </div>
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-xs text-white transition hover:border-white"
-                >
-                  {copied ? "Copied" : "Copy"}
-                </button>
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-white transition hover:border-white"
+                  >
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                  {canNativeShare && (
+                    <button
+                      type="button"
+                      onClick={handleNativeShare}
+                      className="flex h-8 min-w-[110px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-white transition hover:border-white"
+                    >
+                      Share
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/70 p-5 text-sm font-mono text-white/80">
                 {sharePayload}

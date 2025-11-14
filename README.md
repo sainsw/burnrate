@@ -1,6 +1,7 @@
 # BurnRate
 
-BurnRate is a privacy-first, single-page meeting cost estimator built with Next.js 16, Tailwind CSS 4, and client-side state. It keeps all math on the device, keeps inputs minimal, and surfaces a live cost meter, shareable recap, and clear reset flow without extra routes.
+BurnRate is a privacy-first, single-page meeting cost estimator built with Next.js 16, Tailwind CSS 4, and client-side state. It keeps all math on the device, keeps inputs minimal, and surfaces a live cost meter, shareable recap, and clear reset flow without extra routes.  
+Live demo: https://burnrate.ainsworth.dev
 
 ## Getting Started
 
@@ -27,3 +28,4 @@ Visit `http://localhost:3000` and use the touch-friendly controls:
 - Zustand stores under `src/state` hold only the current session and timers; calling “Start new session” clears them immediately.
 - Helper modules like `src/lib/currency.ts`, `src/lib/session.ts`, and `src/lib/timer-utils.ts` keep the Cost & Timer logic pure and testable.
 - The UI reuses Tailwind classes for tabular digits, reduced opacity decimals, and big touch targets so the live meter stays stable and responsive.
+- Metadata falls back to `https://burnrate.ainsworth.dev`; override `NEXT_PUBLIC_SITE_URL` if you deploy somewhere else so OpenGraph/Twitter cards stay accurate.
