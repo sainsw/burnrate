@@ -1,0 +1,232 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { SessionIntakeForm } from "@/components/session-intake-form";
+import { useCostTicker } from "@/hooks/use-cost-ticker";
+import { useSessionStore } from "@/state/session-store";
+import { useTimerStore } from "@/state/timer-store";
+import { formatDuration } from "@/lib/timer-utils";
+import { formatCurrency, getCurrencySymbol, splitCost } from "@/lib/currency";
+
+export default function Home() {
+  const session = useSessionStore((state) => state.session);
+  const clearSession = useSessionStore((state) => state.clearSession);
+  const status = useTimerStore((state) => state.status);
+  const elapsedSeconds = useTimerStore((state) => state.elapsedSeconds);
+  const totalCost = useTimerStore((state) => state.totalCost);
+  const costPerMinute = useTimerStore((state) => state.costPerMinute);
+  const costPerMinuteFormatted = formatCurrency(
+    costPerMinute,
+    session?.currency ?? "USD",
+    2,
+  );
+  const startTimer = useTimerStore((state) => state.start);
+  const pauseTimer = useTimerStore((state) => state.pause);
+  const resumeTimer = useTimerStore((state) => state.resume);
+  const stopTimer = useTimerStore((state) => state.stop);
+  const resetTimer = useTimerStore((state) => state.reset);
+  const snapshot = useTimerStore((state) => state.finalSnapshot);
+  const [copied, setCopied] = useState(false);
+
+  useCostTicker();
+
+  useEffect(() => {
+    if (session && status === "idle") {
+      startTimer(session);
+    }
+  }, [session, status, startTimer]);
+
+  const symbol = session ? getCurrencySymbol(session.currency) : "$";
+  const costParts = splitCost(totalCost);
+  const elapsed = formatDuration(elapsedSeconds);
+
+  const isPaused = status === "paused";
+  const canToggle = status === "running" || status === "paused";
+
+  const sharePayload = useMemo(() => {
+    if (!snapshot) return "";
+    const duration = formatDuration(snapshot.elapsedSeconds);
+    const total = formatCurrency(snapshot.totalCost, snapshot.currency, 2);
+    const perAttendee = formatCurrency(
+      snapshot.totalCost / snapshot.participants,
+      snapshot.currency,
+      2,
+    );
+    return `Meeting burned ${total} in ${duration} with ${snapshot.participants} attendees (${perAttendee} each).`;
+  }, [snapshot]);
+
+  const handleToggle = () => {
+    if (isPaused) {
+      resumeTimer();
+    } else {
+      pauseTimer();
+    }
+  };
+
+  const handleShare = async () => {
+    if (!sharePayload) return;
+    try {
+      await navigator.clipboard.writeText(sharePayload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch (error) {
+      console.error("Copy failed", error);
+    }
+  };
+
+  const handleStartNew = () => {
+    resetTimer();
+    clearSession();
+  };
+
+  const stage =
+    status === "idle" ? "form" : status === "stopped" ? "summary" : "timer";
+
+  return (
+    <div className="space-y-10">
+      <header className="max-w-3xl space-y-4">
+        <h1 className="text-4xl font-semibold text-white sm:text-5xl brand-hue">
+          BurnRate 💸
+        </h1>
+        <p className="text-lg text-white/70 sm:text-xl">
+          Track what every second of your meeting costs so you can pause or
+          stop before it spirals out of control.
+        </p>
+      </header>
+
+      <div className="glass-slate mx-auto max-w-4xl p-6">
+        {stage === "form" && (
+          <>
+            <SessionIntakeForm disabled={status !== "idle"} />
+            <p className="mt-4 text-xs text-white/50">
+              Participants, salary, and currency exist only in-memory and are
+              cleared when you start new sessions.
+            </p>
+          </>
+        )}
+
+        {stage === "timer" && (
+          <>
+            <div className="space-y-3 p-2 sm:p-4">
+              <p className="text-xs text-white/60">
+                Elapsed time
+              </p>
+              <p className="font-mono text-5xl tabular-nums text-white sm:text-6xl">
+                {elapsed}
+              </p>
+            </div>
+
+            <div className="mt-8 space-y-2 p-2 sm:p-4">
+              <p className="text-xs text-white/60">
+                Total cost
+              </p>
+              <div className="flex items-end gap-3 text-white">
+                <span className="text-5xl font-semibold tracking-tight tabular-nums sm:text-6xl">
+                  {symbol}
+                  {costParts.major}
+                  <span className="text-3xl font-medium opacity-70">
+                    {costParts.minor}
+                  </span>
+                </span>
+                <span className="flex-1 text-right text-sm text-white/60">
+                  per minute {costPerMinuteFormatted}
+                </span>
+              </div>
+            </div>
+
+          <div className="mt-10 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleToggle}
+              disabled={!canToggle}
+              className="flex-1 min-w-[140px] rounded-2xl border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40"
+            >
+              {isPaused ? "Resume" : "Pause"}
+            </button>
+            <button
+              type="button"
+              onClick={() => stopTimer()}
+              disabled={status === "idle" || status === "stopped"}
+              className="flex-1 min-w-[160px] rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:bg-white/30 disabled:text-black/30"
+            >
+              Stop & Recap
+            </button>
+          </div>
+          </>
+        )}
+
+        {stage === "summary" && snapshot && (
+          <div className="space-y-6 p-4 sm:p-6">
+            <div className="space-y-2">
+              <p className="text-xs text-white/60">
+                Recap
+              </p>
+              <h2 className="text-2xl font-semibold tracking-[0.2em] text-white">
+                {snapshot.participants} attendees · {snapshot.currency}
+              </h2>
+              <p className="text-sm text-white/60">
+                All calculations stayed locally on this device. Share the
+                summary, then tap “start new session” to erase the data.
+              </p>
+            </div>
+
+            <div className="grid gap-4 text-white sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/15 bg-black/40 p-6">
+                <p className="text-xs text-white/50">
+                  Total cost
+                </p>
+                <p className="text-3xl font-semibold tabular-nums text-white">
+                  {symbol}
+                  {costParts.major}
+                  <span className="text-base font-normal opacity-70">
+                    {costParts.minor}
+                  </span>
+                </p>
+                <p className="text-xs text-white/40">
+                  {costPerMinuteFormatted} / minute
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-black/40 p-6">
+                <p className="text-xs text-white/50">
+                  Duration
+                </p>
+                <p className="text-3xl font-semibold tabular-nums text-white">
+                  {formatDuration(snapshot.elapsedSeconds)}
+                </p>
+                <p className="text-xs text-white/40">
+                  {snapshot.participants} attendees
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-white/15 bg-black/30 p-6">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-white/60">
+                  Shareable summary
+                </div>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-xs text-white transition hover:border-white"
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/70 p-5 text-sm font-mono text-white/80">
+                {sharePayload}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleStartNew}
+              className="w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+            >
+              Start new session
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
