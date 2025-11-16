@@ -18,15 +18,15 @@ export const ParticipantsField = forwardRef(function ParticipantsField(
 ) {
   return (
     <div>
-      <p className="text-sm text-white/50">Participants</p>
-      <div className="mt-3 flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/20 bg-black/30 p-2">
+      <p className="text-sm text-slate-500 dark:text-white/50">Participants</p>
+      <div className="mt-3 flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-white/20 dark:bg-black/30 dark:shadow-none">
         <AccentButton ariaLabel="Decrease participants" onClick={onDecrease} color="rose">
           −
         </AccentButton>
         <input
           ref={ref}
           type="number"
-          className="flex-1 min-w-0 bg-transparent text-center text-3xl font-semibold text-white outline-none"
+          className="flex-1 min-w-0 bg-transparent text-center text-3xl font-semibold text-slate-900 outline-none dark:text-white"
           min={1}
           value={participants}
           onChange={(event) => onChange(Number(event.target.value))}

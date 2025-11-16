@@ -111,7 +111,7 @@ function SessionIntakeFormInner({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-6 rounded-[32px] border border-white/10 bg-white/5 p-6 text-white shadow-2xl backdrop-blur-lg"
+      className="flex flex-col gap-6 rounded-[32px] border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl shadow-slate-200/70 backdrop-blur-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-black/50"
     >
       <ParticipantsField
         ref={participantsRef}
@@ -140,14 +140,14 @@ function SessionIntakeFormInner({
       />
 
       {error && (
-        <p className="text-sm font-semibold text-red-200" role="alert">
+        <p className="text-sm font-semibold text-rose-600 dark:text-red-200" role="alert">
           {error}
         </p>
       )}
 
       <button
         type="submit"
-        className="rounded-2xl bg-rose-500 px-4 py-3 text-lg font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/70"
+        className="rounded-2xl bg-rose-500 px-4 py-3 text-lg font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-rose-300 disabled:text-white/80 dark:disabled:bg-white/20 dark:disabled:text-white/70"
         disabled={disabled || !isValid}
       >
         Start meeting

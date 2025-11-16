@@ -114,10 +114,10 @@ export default function Home() {
   return (
     <div className="space-y-10">
       <header className="max-w-3xl space-y-4">
-        <h1 className="text-4xl font-semibold text-white sm:text-5xl brand-hue">
+        <h1 className="brand-hue text-4xl font-semibold sm:text-5xl">
           BurnRate 💸
         </h1>
-        <p className="text-lg text-white/70 sm:text-xl">
+        <p className="text-lg text-slate-600 sm:text-xl dark:text-white/70">
           Track what every second of your meeting costs so you can pause or
           stop before it spirals out of control.
         </p>
@@ -127,7 +127,7 @@ export default function Home() {
         {stage === "form" && (
           <>
             <SessionIntakeForm disabled={status !== "idle"} />
-            <p className="mt-4 text-xs text-white/50">
+            <p className="mt-4 text-xs text-slate-500 dark:text-white/50">
               Participants, salary, and currency exist only in-memory and are
               cleared when you start new sessions.
             </p>
@@ -137,19 +137,19 @@ export default function Home() {
         {stage === "timer" && (
           <>
             <div className="space-y-3 p-2 sm:p-4">
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-slate-600 dark:text-white/60">
                 Elapsed time
               </p>
-              <p className="font-mono text-5xl tabular-nums text-white sm:text-6xl">
+              <p className="font-mono text-5xl tabular-nums text-slate-900 sm:text-6xl dark:text-white">
                 {elapsed}
               </p>
             </div>
 
             <div className="mt-8 space-y-2 p-2 sm:p-4">
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-slate-600 dark:text-white/60">
                 Total cost
               </p>
-              <div className="flex items-end gap-3 text-white">
+              <div className="flex items-end gap-3 text-slate-900 dark:text-white">
                 <span className="text-5xl font-semibold tracking-tight tabular-nums sm:text-6xl">
                   {symbol}
                   {costParts.major}
@@ -157,7 +157,7 @@ export default function Home() {
                     {costParts.minor}
                   </span>
                 </span>
-                <span className="flex-1 text-right text-sm text-white/60">
+                <span className="flex-1 text-right text-sm text-slate-600 dark:text-white/60">
                   per minute {costPerMinuteFormatted}
                 </span>
               </div>
@@ -168,7 +168,7 @@ export default function Home() {
               type="button"
               onClick={handleToggle}
               disabled={!canToggle}
-              className="flex-1 min-w-[140px] rounded-2xl border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:text-white disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/40"
+              className="flex-1 min-w-[140px] rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 dark:border-white/30 dark:text-white dark:hover:border-white dark:hover:text-white dark:disabled:border-white/10 dark:disabled:text-white/40"
             >
               {isPaused ? "Resume" : "Pause"}
             </button>
@@ -176,7 +176,7 @@ export default function Home() {
               type="button"
               onClick={() => stopTimer()}
               disabled={status === "idle" || status === "stopped"}
-              className="flex-1 min-w-[160px] rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:bg-white/30 disabled:text-black/30"
+              className="flex-1 min-w-[160px] rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:disabled:bg-white/30 dark:disabled:text-black/30"
             >
               Stop & Recap
             </button>
@@ -187,49 +187,49 @@ export default function Home() {
         {stage === "summary" && snapshot && (
           <div className="space-y-6 p-4 sm:p-6">
             <div className="space-y-2">
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-slate-600 dark:text-white/60">
                 Recap
               </p>
-              <h2 className="text-2xl font-semibold tracking-[0.2em] text-white">
+              <h2 className="text-2xl font-semibold tracking-[0.2em] text-slate-900 dark:text-white">
                 {snapshot.participants} attendees · {snapshot.currency}
               </h2>
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-slate-600 dark:text-white/60">
                 All calculations stayed locally on this device. Share the
                 summary, then tap “start new session” to erase the data.
               </p>
             </div>
 
-            <div className="grid gap-4 text-white sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/15 bg-black/40 p-6">
-                <p className="text-xs text-white/50">
+            <div className="grid gap-4 text-slate-900 sm:grid-cols-2 dark:text-white">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/15 dark:bg-black/40 dark:shadow-none">
+                <p className="text-xs text-slate-500 dark:text-white/50">
                   Total cost
                 </p>
-                <p className="text-3xl font-semibold tabular-nums text-white">
+                <p className="text-3xl font-semibold tabular-nums">
                   {symbol}
                   {costParts.major}
                   <span className="text-base font-normal opacity-70">
                     {costParts.minor}
                   </span>
                 </p>
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-slate-500 dark:text-white/40">
                   {costPerMinuteFormatted} / minute
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/15 bg-black/40 p-6">
-                <p className="text-xs text-white/50">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/15 dark:bg-black/40 dark:shadow-none">
+                <p className="text-xs text-slate-500 dark:text-white/50">
                   Duration
                 </p>
-                <p className="text-3xl font-semibold tabular-nums text-white">
+                <p className="text-3xl font-semibold tabular-nums">
                   {formatDuration(snapshot.elapsedSeconds)}
                 </p>
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-slate-500 dark:text-white/40">
                   {snapshot.participants} attendees
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4 rounded-2xl border border-white/15 bg-black/30 p-6">
-              <div className="flex flex-wrap items-center gap-3 text-xs text-white/60">
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-900 dark:border-white/15 dark:bg-black/30 dark:text-white">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60">
                 <div className="flex-1">
                   Shareable summary
                 </div>
@@ -237,7 +237,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-white transition hover:border-white"
+                    className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-slate-800 transition hover:border-slate-500 hover:text-slate-900 dark:border-white/30 dark:text-white dark:hover:border-white"
                   >
                     {copied ? "Copied" : "Copy"}
                   </button>
@@ -245,14 +245,14 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={handleNativeShare}
-                      className="flex h-8 min-w-[110px] items-center justify-center rounded-full border border-white/30 px-3 py-1 text-white transition hover:border-white"
+                      className="flex h-8 min-w-[110px] items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-slate-800 transition hover:border-slate-500 hover:text-slate-900 dark:border-white/30 dark:text-white dark:hover:border-white"
                     >
                       Share
                     </button>
                   )}
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-black/70 p-5 text-sm font-mono text-white/80">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-mono text-slate-700 dark:border-white/10 dark:bg-black/70 dark:text-white/80">
                 {sharePayload}
               </div>
             </div>
@@ -260,7 +260,7 @@ export default function Home() {
             <button
               type="button"
               onClick={handleStartNew}
-              className="w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+              className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
             >
               Start new session
             </button>

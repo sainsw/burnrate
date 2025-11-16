@@ -43,7 +43,7 @@ export async function Footer() {
                 </PrideAvatar>
               </a>
             </div>
-            <div className="text-lg text-white/70 sm:text-xl">
+            <div className="text-lg text-slate-600 sm:text-xl dark:text-white/70">
               {copyrightString}
             </div>
           </div>

@@ -75,11 +75,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${spaceGrotesk.variable} ${geistMono.variable} bg-slate-950 text-white antialiased`}
+        className={`${spaceGrotesk.variable} ${geistMono.variable} bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-white`}
       >
         <div className="relative min-h-screen overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[#0f172a]" />
-          <div className="pointer-events-none absolute inset-0 opacity-70" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white via-slate-100 to-white dark:from-[#0b1123] dark:via-[#0f172a] dark:to-[#0b1123]" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-rose-50/60 to-transparent opacity-60 dark:via-white/10" />
           <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col">
             <main className="flex flex-1 flex-col gap-10 px-6 pb-16 pt-14 sm:px-10">
               {children}
