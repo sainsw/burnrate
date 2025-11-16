@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { BuiltWithLove } from "@/components/built-with";
+import { Footer } from "@/components/footer";
 import {
   SEO_KEYWORDS,
   SITE_DESCRIPTION,
@@ -78,9 +80,13 @@ export default function RootLayout({
         <div className="relative min-h-screen overflow-hidden">
           <div className="pointer-events-none absolute inset-0 bg-[#0f172a]" />
           <div className="pointer-events-none absolute inset-0 opacity-70" />
-          <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-6 pb-16 pt-14 sm:px-10">
-            {children}
-          </main>
+          <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col">
+            <main className="flex flex-1 flex-col gap-10 px-6 pb-16 pt-14 sm:px-10">
+              {children}
+            </main>
+            <BuiltWithLove />
+            <Footer />
+          </div>
         </div>
       </body>
     </html>
