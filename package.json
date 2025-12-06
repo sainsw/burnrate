@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run fetch-avatar",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:unit": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "fetch-avatar": "node ./scripts/fetch-avatar.js"
   },
   "dependencies": {
     "clsx": "^2.1.1",
