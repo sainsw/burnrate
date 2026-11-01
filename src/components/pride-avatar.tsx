@@ -54,7 +54,7 @@ export function PrideAvatar({ children, className = "" }: PrideAvatarProps) {
   if (!isPrideTime) {
     return (
       <div
-        className={`rounded-full ring-2 ring-black dark:ring-white ${className}`}
+        className={`rounded-full ring-1 ring-border ${className}`}
       >
         {children}
       </div>

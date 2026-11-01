@@ -1,6 +1,6 @@
 import type { SalaryUnit } from "@/types/session";
 
-const WORK_HOURS_PER_YEAR = 2080;
+export const WORK_HOURS_PER_YEAR = 2080;
 const SECONDS_PER_HOUR = 3600;
 
 export function toPerSecondSalary(

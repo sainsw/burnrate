@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test("happy path flows on single page", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Start meeting" }).click();
-  await expect(page.getByText("Total cost")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cost so far" })).toBeVisible();
 
   const pauseButton = page.getByRole("button", { name: /pause/i });
   await expect(pauseButton).toBeVisible();
@@ -11,5 +11,5 @@ test("happy path flows on single page", async ({ page }) => {
   await expect(page.getByRole("button", { name: /resume/i })).toBeVisible();
 
   await page.getByRole("button", { name: /stop & recap/i }).click();
-  await expect(page.getByRole("button", { name: /start new session/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /start new meeting/i })).toBeVisible();
 });

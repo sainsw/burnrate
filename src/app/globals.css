@@ -1,62 +1,93 @@
 @import "tailwindcss";
 
+/*
+ * Achromatic ledger: the chrome is ink on white, money is set in ink, and the
+ * one hue (ember, the brand's rose) marks only the burned part of the fuse
+ * and the running dot. Separation is a 1px border, never a shadow.
+ */
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --glass-bg: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(15, 23, 42, 0.12);
-  --glass-shadow: 0 25px 60px rgba(15, 23, 42, 0.15);
-  --glass-soft-bg: #ffffff;
-  --glass-soft-border: rgba(15, 23, 42, 0.08);
-  --glass-soft-shadow: inset 0 0 30px rgba(15, 23, 42, 0.04);
+  --ground: #f8f8f8;
+  --surface: #ffffff;
+  --raised: #eeeeee;
+  --active: #e5e5e5;
+  --border: #e6e6e6;
+  --rule: #f0f0f0;
+  --control: #d4d4d4;
+  --ink: #0a0a0a;
+  --muted: #6b6b6b;
+  --primary: #141414;
+  --on-primary: #ffffff;
+  --ember: #e11d48;
+  --ember-track: #f1f1f1;
+  --negative: #c4242a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: #020617;
-    --foreground: #f8fafc;
-    --glass-bg: #111827;
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --glass-shadow: 0 35px 65px rgba(2, 6, 23, 0.45);
-    --glass-soft-bg: #1e293b;
-    --glass-soft-border: rgba(255, 255, 255, 0.08);
-    --glass-soft-shadow: inset 0 0 30px rgba(255, 255, 255, 0.05);
+    --ground: #000000;
+    --surface: #111111;
+    --raised: #222222;
+    --active: #2a2a2a;
+    --border: #2e2e2e;
+    --rule: #1c1c1c;
+    --control: #444444;
+    --ink: #ffffff;
+    --muted: #b4b4b4;
+    --primary: #ffffff;
+    --on-primary: #000000;
+    --ember: #fb5c7c;
+    --ember-track: #262626;
+    --negative: #e5566f;
   }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-geist-mono);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-active: var(--active);
+  --color-border: var(--border);
+  --color-rule: var(--rule);
+  --color-control: var(--control);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-ember: var(--ember);
+  --color-ember-track: var(--ember-track);
+  --color-negative: var(--negative);
+  --font-sans: var(--font-geist), system-ui, sans-serif;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-space-grotesk), system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+@layer base {
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-geist), system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: var(--surface);
+  }
+
 }
 
-.glass-slate {
-  background: var(--glass-bg);
-  border-radius: 1.75rem;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  padding: 0.75rem;
-}
-
-.glass-slate-soft {
-  background: var(--glass-soft-bg);
-  border-radius: 1.5rem;
-  border: 1px solid var(--glass-soft-border);
-  box-shadow: var(--glass-soft-shadow);
-}
-
-.brand-hue {
-  color: #f43f5e;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

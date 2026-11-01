@@ -10,16 +10,17 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:3000` and use the touch-friendly controls:
+Visit `http://localhost:3000`. The app has one screen with three states:
 
-- **Participants & salary** both expose large plus/minus buttons with 1-person minimum and $5,000 salary increments (defaulting to $50,000) so the values are easy to tap.
-- **Currency selector** shows the top five symbols inside a sliding highlight, letting you choose your preferred ISO code without typing.
-- **Live meter** appears beside the form, showing HH:MM:SS, total cost (split major/minor digits), and cost-per-minute along with Pause/Resume and Stop & Recap buttons.
-- **Summary & share** lives below the meter after you stop the session so the copyable text and “Start new session” reset everything in-memory.
+- **New meeting**: steppers for people and average pay (a year or an hour), a currency switch, and a live estimate beside them: the cost a minute, an hour, each person, and over the first hour.
+- **Meeting in progress**: the cost so far set large enough to read across a table, time, cost a minute and each person, the next quarter-hour mark and when it lands, and the fuse: a one-hour track that burns as the meeting runs. Pause, resume, or stop and recap.
+- **Meeting recap**: the final cost, a sentence to copy or share, and "Start new meeting" to clear everything.
+
+The look follows an achromatic ledger: Geist, ink on white (true black in dark mode), 1px borders instead of shadows, and the brand rose only on the burned part of the fuse.
 
 ## Testing
 
-- `npm run lint` – ESLint via the Next.js config
+- `npm run lint` – Biome
 - `npm run test:unit` – Vitest runs the timer math suite
 - `npm run test:e2e` – Playwright executes the happy path (automatically runs `npm run dev`)
 

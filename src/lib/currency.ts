@@ -70,6 +70,7 @@ export function getCurrencySymbol(currency: string): string {
     const formatter = new Intl.NumberFormat(undefined, {
       style: "currency",
       currency,
+      currencyDisplay: "narrowSymbol",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });

@@ -17,13 +17,14 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#020617",
-          backgroundImage:
-            "radial-gradient(circle at 30% 30%, #38bdf8 0%, transparent 55%), radial-gradient(circle at 70% 20%, #fbbf24 0%, transparent 60%)",
-          fontSize: 38,
+          backgroundColor: "#ffffff",
+          borderRadius: 14,
         }}
       >
-        <span style={{ transform: "translateY(2px)" }}>💸</span>
+        <svg width="46" height="46" viewBox="0 0 20 20">
+          <circle cx="10" cy="10" r="8.25" fill="none" stroke="#0a0a0a" strokeWidth="1.5" />
+          <path d="M10 10 V3.5 A6.5 6.5 0 0 1 16.5 10 Z" fill="#e11d48" />
+        </svg>
       </div>
     ),
     size,

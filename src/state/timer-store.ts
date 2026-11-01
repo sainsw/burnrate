@@ -10,6 +10,8 @@ export type TimerStatus = "idle" | "running" | "paused" | "stopped";
 interface TimerState {
   status: TimerStatus;
   startTime: number | null;
+  startedAt: number | null;
+  stoppedAt: number | null;
   pausedOffset: number;
   pausedStarted: number | null;
   elapsedSeconds: number;
@@ -28,6 +30,8 @@ interface TimerState {
 const initialState = {
   status: "idle" as TimerStatus,
   startTime: null,
+  startedAt: null,
+  stoppedAt: null,
   pausedOffset: 0,
   pausedStarted: null,
   elapsedSeconds: 0,
@@ -44,6 +48,8 @@ export const useTimerStore = create<TimerState>()((set, get) => ({
     set({
       status: "running",
       startTime: now,
+      startedAt: Date.now(),
+      stoppedAt: null,
       pausedOffset: 0,
       pausedStarted: null,
       elapsedSeconds: 0,
@@ -105,6 +111,7 @@ export const useTimerStore = create<TimerState>()((set, get) => ({
 
     set({
       status: "stopped",
+      stoppedAt: Date.now(),
       pausedStarted: null,
       pausedOffset: effectivePausedOffset,
       elapsedSeconds,

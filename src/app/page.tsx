@@ -1,13 +1,67 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatMinutes, Fuse } from "@/components/fuse";
 import { SessionIntakeForm } from "@/components/session-intake-form";
 import { useCostTicker } from "@/hooks/use-cost-ticker";
-import { useSessionStore } from "@/state/session-store";
-import { useTimerStore } from "@/state/timer-store";
-import { formatDuration } from "@/lib/timer-utils";
 import { formatCurrency, getCurrencySymbol, splitCost } from "@/lib/currency";
 import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
+import { formatDuration } from "@/lib/timer-utils";
+import { useSessionStore } from "@/state/session-store";
+import { useTimerStore } from "@/state/timer-store";
+
+const secondaryButton =
+  "h-10 rounded-md bg-active px-4 text-[14px] font-medium text-ink transition-colors hover:bg-control active:bg-control";
+const primaryButton =
+  "h-10 rounded-md bg-primary px-4 text-[14px] font-medium text-on-primary transition-opacity hover:opacity-85 active:opacity-75";
+
+function clockTime(timestamp: number | null) {
+  if (timestamp === null) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(timestamp);
+}
+
+function TitleRow({
+  title,
+  subline,
+  children,
+}: {
+  title: string;
+  subline: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-[24px] font-bold leading-8 tracking-[-0.01em]">
+          {title}
+        </h1>
+        <p className="mt-1 text-[14px] text-muted sm:text-[15px]">{subline}</p>
+      </div>
+      {children && <div className="flex w-full gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">{children}</div>}
+    </div>
+  );
+}
+
+function Strip({ items }: { items: [string, string][] }) {
+  return (
+    <dl className="grid grid-cols-2 border-y border-border sm:grid-cols-4">
+      {items.map(([label, value], index) => (
+        <div
+          key={label}
+          className={`py-4 sm:px-5 sm:first:pl-0 ${index % 2 === 1 ? "pl-4 border-l border-border" : ""} ${index >= 2 ? "border-t border-border sm:border-t-0" : ""} ${index === 2 ? "sm:border-l sm:pl-5" : ""}`}
+        >
+          <dt className="text-[13px] text-muted">{label}</dt>
+          <dd className="mt-1 text-[22px] font-medium leading-7 tabular-nums sm:text-[24px]">
+            {value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function Home() {
   const session = useSessionStore((state) => state.session);
@@ -16,11 +70,9 @@ export default function Home() {
   const elapsedSeconds = useTimerStore((state) => state.elapsedSeconds);
   const totalCost = useTimerStore((state) => state.totalCost);
   const costPerMinute = useTimerStore((state) => state.costPerMinute);
-  const costPerMinuteFormatted = formatCurrency(
-    costPerMinute,
-    session?.currency ?? "USD",
-    2,
-  );
+  const ratePerSecond = useTimerStore((state) => state.ratePerSecond);
+  const startedAt = useTimerStore((state) => state.startedAt);
+  const stoppedAt = useTimerStore((state) => state.stoppedAt);
   const startTimer = useTimerStore((state) => state.start);
   const pauseTimer = useTimerStore((state) => state.pause);
   const resumeTimer = useTimerStore((state) => state.resume);
@@ -38,13 +90,6 @@ export default function Home() {
     }
   }, [session, status, startTimer]);
 
-  const symbol = session ? getCurrencySymbol(session.currency) : "$";
-  const costParts = splitCost(totalCost);
-  const elapsed = formatDuration(elapsedSeconds);
-
-  const isPaused = status === "paused";
-  const canToggle = status === "running" || status === "paused";
-
   useEffect(() => {
     if (typeof navigator === "undefined") return;
     const frame = requestAnimationFrame(() => {
@@ -52,6 +97,10 @@ export default function Home() {
     });
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  const currency = session?.currency ?? "USD";
+  const money = (value: number) => formatCurrency(value, currency, 2);
+  const isPaused = status === "paused";
 
   const sharePayload = useMemo(() => {
     if (!snapshot) return "";
@@ -64,15 +113,6 @@ export default function Home() {
     );
     return `Meeting burned ${total} in ${duration} with ${snapshot.participants} attendees (${perAttendee} each). Track your next meeting with BurnRate: ${SITE_URL}`;
   }, [snapshot]);
-  const shareTitle = `${SITE_NAME} meeting summary`;
-
-  const handleToggle = () => {
-    if (isPaused) {
-      resumeTimer();
-    } else {
-      pauseTimer();
-    }
-  };
 
   const handleShare = async () => {
     if (!sharePayload) return;
@@ -86,19 +126,15 @@ export default function Home() {
   };
 
   const handleNativeShare = async () => {
-    if (!sharePayload || !canNativeShare || typeof navigator.share !== "function") {
-      return;
-    }
+    if (!sharePayload || typeof navigator.share !== "function") return;
     try {
       await navigator.share({
-        title: shareTitle,
+        title: `${SITE_NAME} meeting summary`,
         text: sharePayload,
         url: SITE_URL,
       });
     } catch (error) {
-      if ((error as DOMException)?.name === "AbortError") {
-        return;
-      }
+      if ((error as DOMException)?.name === "AbortError") return;
       console.error("Native share failed", error);
     }
   };
@@ -108,165 +144,167 @@ export default function Home() {
     clearSession();
   };
 
-  const stage =
-    status === "idle" ? "form" : status === "stopped" ? "summary" : "timer";
+  if (status === "idle" || !session) {
+    return (
+      <>
+        <TitleRow
+          title="New meeting"
+          subline="Set who is in the room, then start the meter when the meeting starts."
+        />
+        <SessionIntakeForm />
+      </>
+    );
+  }
 
-  return (
-    <div className="space-y-10">
-      <header className="max-w-3xl space-y-4">
-        <h1 className="brand-hue text-4xl font-semibold sm:text-5xl">
-          BurnRate 💸
-        </h1>
-        <p className="text-lg text-slate-600 sm:text-xl dark:text-white/70">
-          Track what every second of your meeting costs so you can pause or
-          stop before it spirals out of control.
-        </p>
-      </header>
+  const people = `${session.participants} ${session.participants === 1 ? "person" : "people"}`;
+  const pay = `${formatCurrency(session.salaryInput, currency, 0)} ${session.salaryUnit === "annual" ? "a year" : "an hour"}`;
+  const spanHours = Math.max(1, Math.ceil(elapsedSeconds / 3600));
+  const fuseTitle =
+    spanHours === 1 ? "Against the first hour" : `Against ${formatMinutes(spanHours * 60)}`;
 
-      <div className="glass-slate mx-auto max-w-4xl p-6">
-        {stage === "form" && (
-          <>
-            <SessionIntakeForm disabled={status !== "idle"} />
-            <p className="mt-4 text-xs text-slate-500 dark:text-white/50">
-              Participants, salary, and currency exist only in-memory and are
-              cleared when you start new sessions.
-            </p>
-          </>
-        )}
-
-        {stage === "timer" && (
-          <>
-            <div className="space-y-3 p-2 sm:p-4">
-              <p className="text-xs text-slate-600 dark:text-white/60">
-                Elapsed time
-              </p>
-              <p className="font-mono text-5xl tabular-nums text-slate-900 sm:text-6xl dark:text-white">
-                {elapsed}
-              </p>
-            </div>
-
-            <div className="mt-8 space-y-2 p-2 sm:p-4">
-              <p className="text-xs text-slate-600 dark:text-white/60">
-                Total cost
-              </p>
-              <div className="flex items-end gap-3 text-slate-900 dark:text-white">
-                <span className="text-5xl font-semibold tracking-tight tabular-nums sm:text-6xl">
-                  {symbol}
-                  {costParts.major}
-                  <span className="text-3xl font-medium opacity-70">
-                    {costParts.minor}
-                  </span>
-                </span>
-                <span className="flex-1 text-right text-sm text-slate-600 dark:text-white/60">
-                  per minute {costPerMinuteFormatted}
-                </span>
-              </div>
-            </div>
-
-          <div className="mt-10 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleToggle}
-              disabled={!canToggle}
-              className="flex-1 min-w-[140px] rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-500 hover:text-slate-900 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 dark:border-white/30 dark:text-white dark:hover:border-white dark:hover:text-white dark:disabled:border-white/10 dark:disabled:text-white/40"
-            >
-              {isPaused ? "Resume" : "Pause"}
-            </button>
-            <button
-              type="button"
-              onClick={() => stopTimer()}
-              disabled={status === "idle" || status === "stopped"}
-              className="flex-1 min-w-[160px] rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:disabled:bg-white/30 dark:disabled:text-black/30"
-            >
-              Stop & Recap
-            </button>
-          </div>
-          </>
-        )}
-
-        {stage === "summary" && snapshot && (
-          <div className="space-y-6 p-4 sm:p-6">
-            <div className="space-y-2">
-              <p className="text-xs text-slate-600 dark:text-white/60">
-                Recap
-              </p>
-              <h2 className="text-2xl font-semibold tracking-[0.2em] text-slate-900 dark:text-white">
-                {snapshot.participants} attendees · {snapshot.currency}
+  if (status === "stopped" && snapshot) {
+    return (
+      <>
+        <TitleRow
+          title="Meeting recap"
+          subline={`${clockTime(startedAt)} to ${clockTime(stoppedAt)} · ${people} at ${pay} · nothing was saved`}
+        >
+          <button type="button" className={primaryButton} onClick={handleStartNew}>
+            Start new meeting
+          </button>
+        </TitleRow>
+        <section
+          aria-labelledby="total-heading"
+          className="rounded-lg border border-border bg-surface p-5 sm:p-8"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
+            <div>
+              <h2 id="total-heading" className="text-[16px] font-medium">
+                This meeting cost
               </h2>
-              <p className="text-sm text-slate-600 dark:text-white/60">
-                All calculations stayed locally on this device. Share the
-                summary, then tap “start new session” to erase the data.
+              <p className="mt-3 whitespace-nowrap text-[clamp(48px,11vw,128px)] font-bold leading-none tracking-[-0.04em] tabular-nums">
+                {money(snapshot.totalCost)}
               </p>
             </div>
-
-            <div className="grid gap-4 text-slate-900 sm:grid-cols-2 dark:text-white">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/15 dark:bg-black/40 dark:shadow-none">
-                <p className="text-xs text-slate-500 dark:text-white/50">
-                  Total cost
-                </p>
-                <p className="text-3xl font-semibold tabular-nums">
-                  {symbol}
-                  {costParts.major}
-                  <span className="text-base font-normal opacity-70">
-                    {costParts.minor}
-                  </span>
-                </p>
-                <p className="text-xs text-slate-500 dark:text-white/40">
-                  {costPerMinuteFormatted} / minute
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/15 dark:bg-black/40 dark:shadow-none">
-                <p className="text-xs text-slate-500 dark:text-white/50">
-                  Duration
-                </p>
-                <p className="text-3xl font-semibold tabular-nums">
-                  {formatDuration(snapshot.elapsedSeconds)}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-white/40">
-                  {snapshot.participants} attendees
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-900 dark:border-white/15 dark:bg-black/30 dark:text-white">
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-white/60">
-                <div className="flex-1">
-                  Shareable summary
-                </div>
-                <div className="flex flex-wrap gap-2 text-[11px]">
+            <div className="w-full lg:max-w-[440px]">
+              <h3 className="text-[14px] font-medium">Share the result</h3>
+              <p className="mt-2 rounded-md bg-raised p-4 text-[15px] leading-6">
+                {sharePayload}
+              </p>
+              <div className="mt-3 flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
+                <button type="button" onClick={handleShare} className={secondaryButton}>
+                  {copied ? "Copied" : "Copy text"}
+                </button>
+                {canNativeShare && (
                   <button
                     type="button"
-                    onClick={handleShare}
-                    className="flex h-8 min-w-[96px] items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-slate-800 transition hover:border-slate-500 hover:text-slate-900 dark:border-white/30 dark:text-white dark:hover:border-white"
+                    onClick={handleNativeShare}
+                    className={secondaryButton}
                   >
-                    {copied ? "Copied" : "Copy"}
+                    Share
                   </button>
-                  {canNativeShare && (
-                    <button
-                      type="button"
-                      onClick={handleNativeShare}
-                      className="flex h-8 min-w-[110px] items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-slate-800 transition hover:border-slate-500 hover:text-slate-900 dark:border-white/30 dark:text-white dark:hover:border-white"
-                    >
-                      Share
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-mono text-slate-700 dark:border-white/10 dark:bg-black/70 dark:text-white/80">
-                {sharePayload}
+                )}
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleStartNew}
-              className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-white/90"
-            >
-              Start new session
-            </button>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="mt-8">
+            <Strip
+              items={[
+                ["Time", formatDuration(snapshot.elapsedSeconds)],
+                ["A minute", money(costPerMinute)],
+                ["Each person", money(snapshot.totalCost / snapshot.participants)],
+                ["People", String(snapshot.participants)],
+              ]}
+            />
+          </div>
+          <h3 className="mt-8 text-[14px] font-medium">{fuseTitle}</h3>
+          <div className="mt-3">
+            <Fuse
+              elapsedSeconds={snapshot.elapsedSeconds}
+              ratePerSecond={ratePerSecond}
+              currency={currency}
+            />
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  const live = splitCost(totalCost);
+  const markStep = spanHours === 1 ? 15 : spanHours === 2 ? 30 : 60;
+  const nextMarkMinutes = (Math.floor(elapsedSeconds / 60 / markStep) + 1) * markStep;
+  const secondsToMark = Math.max(0, nextMarkMinutes * 60 - elapsedSeconds);
+
+  return (
+    <>
+      <TitleRow
+        title={isPaused ? "Meeting paused" : "Meeting in progress"}
+        subline={`${people} at ${pay} · started ${clockTime(startedAt)}`}
+      >
+        <button
+          type="button"
+          className={secondaryButton}
+          onClick={() => (isPaused ? resumeTimer() : pauseTimer())}
+        >
+          {isPaused ? "Resume" : "Pause"}
+        </button>
+        <button type="button" className={primaryButton} onClick={() => stopTimer()}>
+          Stop & recap
+        </button>
+      </TitleRow>
+
+      <section
+        aria-labelledby="meter-heading"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-8"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <h2 id="meter-heading" className="text-[16px] font-medium">
+            Cost so far
+          </h2>
+          <span className="flex items-center gap-2 text-[13px] text-muted">
+            <span
+              aria-hidden="true"
+              className={`h-2 w-2 rounded-full ${isPaused ? "bg-control" : "bg-ember"}`}
+            />
+            {isPaused ? "Paused, not counting" : "Counting"}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          <p
+            className="whitespace-nowrap text-[clamp(48px,11vw,128px)] font-bold leading-none tracking-[-0.04em] tabular-nums"
+            aria-live="off"
+          >
+            {getCurrencySymbol(currency)}
+            {live.major}
+            <span className="text-[0.55em] font-medium tracking-[-0.02em] text-muted">
+              {live.minor}
+            </span>
+          </p>
+          <p className="pb-2 text-[14px] text-muted tabular-nums sm:text-right">
+            At {formatMinutes(nextMarkMinutes)} it reaches
+            <span className="mt-1 block text-[24px] font-medium leading-7 text-ink">
+              {money(nextMarkMinutes * 60 * ratePerSecond)}
+            </span>
+            <span className="mt-1 block">
+              {isPaused ? "Paused" : `in ${formatDuration(secondsToMark).replace(/^00:/, "")}`}
+            </span>
+          </p>
+        </div>
+        <div className="mt-8">
+          <Strip
+            items={[
+              ["Time", formatDuration(elapsedSeconds)],
+              ["A minute", money(costPerMinute)],
+              ["Each person", money(totalCost / session.participants)],
+              ["People", String(session.participants)],
+            ]}
+          />
+        </div>
+        <h3 className="mt-8 text-[14px] font-medium">{fuseTitle}</h3>
+        <div className="mt-3">
+          <Fuse elapsedSeconds={elapsedSeconds} ratePerSecond={ratePerSecond} currency={currency} />
+        </div>
+      </section>
+    </>
   );
 }

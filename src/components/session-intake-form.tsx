@@ -1,17 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Fuse } from "@/components/fuse";
 import { useLocaleCurrency } from "@/hooks/use-locale-currency";
-import { buildSessionSalaryPerSecond } from "@/lib/session";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
+import {
+  buildSessionSalaryPerSecond,
+  WORK_HOURS_PER_YEAR,
+} from "@/lib/session";
 import { useSessionStore } from "@/state/session-store";
 import { useTimerStore } from "@/state/timer-store";
 import type { SalaryUnit } from "@/types/session";
-import { ParticipantsField } from "./session-intake/participants-field";
-import { SalaryField } from "./session-intake/salary-field";
-import {
-  CurrencySlider,
-  currencyOptions,
-} from "./session-intake/currency-slider";
+import { Segmented } from "./session-intake/segmented";
+import { Stepper } from "./session-intake/stepper";
 
 const DEFAULT_PARTICIPANTS = 5;
 const DEFAULT_ANNUAL_SALARY = 50000;
@@ -19,41 +20,36 @@ const DEFAULT_HOURLY_RATE = 65;
 const ANNUAL_STEP = 5000;
 const HOURLY_STEP = 5;
 
-interface SessionIntakeFormProps {
-  disabled?: boolean;
+export const currencyOptions = ["USD", "EUR", "GBP", "JPY", "INR"] as const;
+
+const unitOptions: { value: SalaryUnit; label: string }[] = [
+  { value: "annual", label: "A year" },
+  { value: "hourly", label: "An hour" },
+];
+
+function parseWholeNumber(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  return digits === "" ? 0 : Number(digits);
 }
 
-export function SessionIntakeForm({ disabled = false }: SessionIntakeFormProps) {
+export function SessionIntakeForm() {
   const resetCounter = useSessionStore((state) => state.resetCounter);
   const localeCurrency = useLocaleCurrency();
   const key = `${resetCounter}-${localeCurrency}`;
 
-  return (
-    <SessionIntakeFormInner
-      key={key}
-      disabled={disabled}
-      localeCurrency={localeCurrency}
-    />
-  );
+  return <SessionIntakeFormInner key={key} localeCurrency={localeCurrency} />;
 }
 
-interface SessionIntakeFormInnerProps {
-  localeCurrency: string;
-  disabled: boolean;
-}
-
-function SessionIntakeFormInner({
-  localeCurrency,
-  disabled,
-}: SessionIntakeFormInnerProps) {
-  const initialCurrencyIndex =
-    currencyOptions.findIndex((option) => option.code === localeCurrency);
+function SessionIntakeFormInner({ localeCurrency }: { localeCurrency: string }) {
+  const initialCurrency = (currencyOptions as readonly string[]).includes(
+    localeCurrency,
+  )
+    ? localeCurrency
+    : "USD";
   const [participants, setParticipants] = useState(DEFAULT_PARTICIPANTS);
   const [salary, setSalary] = useState(DEFAULT_ANNUAL_SALARY);
   const [unit, setUnit] = useState<SalaryUnit>("annual");
-  const [currencyIndex, setCurrencyIndex] = useState(
-    initialCurrencyIndex >= 0 ? initialCurrencyIndex : 0,
-  );
+  const [currency, setCurrency] = useState<string>(initialCurrency);
   const [error, setError] = useState<string | null>(null);
   const participantsRef = useRef<HTMLInputElement>(null);
 
@@ -64,94 +60,164 @@ function SessionIntakeFormInner({
   const setSession = useSessionStore((state) => state.setSession);
   const resetTimer = useTimerStore((state) => state.reset);
 
-  const parsedCurrency = currencyOptions[currencyIndex];
-
-  const parsedParticipants = Number(participants);
-  const parsedSalary = Number(salary);
-
-  const isValid = useMemo(() => {
-    if (parsedParticipants < 1) return false;
-    if (parsedSalary <= 0) return false;
-    return true;
-  }, [parsedParticipants, parsedSalary]);
-
-  const adjustParticipants = (delta: number) =>
-    setParticipants((prev) => Math.max(1, prev + delta));
-
+  const isValid = participants >= 1 && salary > 0;
   const salaryStep = unit === "annual" ? ANNUAL_STEP : HOURLY_STEP;
-  const adjustSalary = (delta: number) =>
-    setSalary((prev) => Math.max(0, prev + delta));
+  const ratePerSecond = isValid
+    ? buildSessionSalaryPerSecond(participants, salary, unit)
+    : 0;
+  const perPersonHourly =
+    participants > 0 ? (ratePerSecond * 3600) / participants : 0;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isValid) {
-      setError("Please set at least 1 participant and a salary above 0.");
+      setError("Add at least one person and a pay figure above zero.");
       return;
     }
     setError(null);
-
-    const salaryPerSecond = buildSessionSalaryPerSecond(
-      parsedParticipants,
-      parsedSalary,
-      unit,
-    );
-
     resetTimer();
     setSession({
-      participants: parsedParticipants,
-      salaryPerSecond,
-      currency: parsedCurrency.code,
-      salaryInput: parsedSalary,
+      participants,
+      salaryPerSecond: ratePerSecond,
+      currency,
+      salaryInput: salary,
       salaryUnit: unit,
     });
   };
 
-  const sliderWidth = 100 / currencyOptions.length;
+  const money = (value: number) => formatCurrency(value, currency, 2);
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-6 rounded-[32px] border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl shadow-slate-200/70 backdrop-blur-lg dark:border-white/10 dark:bg-white/5 dark:text-white dark:shadow-black/50"
+      className="grid items-start gap-3 lg:grid-cols-[7fr_5fr]"
     >
-      <ParticipantsField
-        ref={participantsRef}
-        participants={participants}
-        onDecrease={() => adjustParticipants(-1)}
-        onIncrease={() => adjustParticipants(1)}
-        onChange={(value) => setParticipants(Number.isNaN(value) ? 1 : Math.max(1, value))}
-      />
-      <SalaryField
-        unit={unit}
-        salary={salary}
-        salaryStep={salaryStep}
-        onIncrease={() => adjustSalary(salaryStep)}
-        onDecrease={() => adjustSalary(-salaryStep)}
-        onChange={(value) => setSalary(Number.isNaN(value) ? 0 : Math.max(0, value))}
-        onUnitChange={(value) => {
-          if (unit === value) return;
-          setUnit(value);
-          setSalary(value === "annual" ? DEFAULT_ANNUAL_SALARY : DEFAULT_HOURLY_RATE);
-        }}
-      />
-      <CurrencySlider
-        currencyIndex={currencyIndex}
-        onChange={setCurrencyIndex}
-        sliderWidth={sliderWidth}
-      />
-
-      {error && (
-        <p className="text-sm font-semibold text-rose-600 dark:text-red-200" role="alert">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        className="rounded-2xl bg-rose-500 px-4 py-3 text-lg font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-rose-300 disabled:text-white/80 dark:disabled:bg-white/20 dark:disabled:text-white/70"
-        disabled={disabled || !isValid}
+      <section
+        aria-labelledby="room-heading"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
       >
-        Start meeting
-      </button>
+        <h2 id="room-heading" className="text-[16px] font-medium">
+          Who is in the room
+        </h2>
+        <div className="mt-5 grid gap-6">
+          <Stepper
+            label="People"
+            value={String(participants)}
+            inputRef={participantsRef}
+            onChange={(raw) => setParticipants(Math.max(1, parseWholeNumber(raw)))}
+            onDecrease={() => setParticipants((prev) => Math.max(1, prev - 1))}
+            onIncrease={() => setParticipants((prev) => prev + 1)}
+            decreaseLabel="One fewer person"
+            increaseLabel="One more person"
+            suffix={participants === 1 ? "person" : "people"}
+          />
+          <Stepper
+            label="Average pay, before tax"
+            value={salary.toLocaleString("en-US")}
+            prefix={getCurrencySymbol(currency)}
+            onChange={(raw) => setSalary(parseWholeNumber(raw))}
+            onDecrease={() => setSalary((prev) => Math.max(0, prev - salaryStep))}
+            onIncrease={() => setSalary((prev) => prev + salaryStep)}
+            decreaseLabel={`Lower pay by ${salaryStep.toLocaleString("en-US")}`}
+            increaseLabel={`Raise pay by ${salaryStep.toLocaleString("en-US")}`}
+            suffix={unit === "annual" ? "a year" : "an hour"}
+            aside={
+              <Segmented
+                label="Pay period"
+                options={unitOptions}
+                value={unit}
+                onChange={(value) => {
+                  if (value === unit) return;
+                  setUnit(value);
+                  setSalary(
+                    value === "annual" ? DEFAULT_ANNUAL_SALARY : DEFAULT_HOURLY_RATE,
+                  );
+                }}
+              />
+            }
+          />
+          <div>
+            <p id="currency-label" className="text-[14px] font-medium">
+              Currency
+            </p>
+            <div className="mt-2">
+              <Segmented
+                label="Currency"
+                stretch
+                options={currencyOptions.map((code) => ({
+                  value: code,
+                  name: code,
+                  label: (
+                    <>
+                      <span aria-hidden="true" className="text-ink">
+                        {getCurrencySymbol(code)}
+                      </span>{" "}
+                      <span aria-hidden="true" className="hidden sm:inline">
+                        {code}
+                      </span>
+                    </>
+                  ),
+                }))}
+                value={currency}
+                onChange={setCurrency}
+              />
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-5 text-[14px] text-negative" role="alert">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={!isValid}
+          className="mt-6 h-11 w-full rounded-md bg-primary px-5 text-[15px] font-medium text-on-primary transition-opacity hover:opacity-85 active:opacity-75 disabled:cursor-not-allowed disabled:bg-raised disabled:text-muted"
+        >
+          Start meeting
+        </button>
+      </section>
+
+      <section
+        aria-labelledby="estimate-heading"
+        className="rounded-lg border border-border bg-surface p-5 sm:p-6"
+      >
+        <h2 id="estimate-heading" className="text-[16px] font-medium">
+          What it will cost
+        </h2>
+        <p className="mt-4 flex items-baseline gap-2 tabular-nums">
+          <span className="text-[30px] font-bold leading-9">
+            {money(ratePerSecond * 60)}
+          </span>
+          <span className="text-muted">a minute</span>
+        </p>
+        <dl className="mt-4 text-[14px] tabular-nums">
+          {[
+            ["An hour, the whole room", money(ratePerSecond * 3600)],
+            ["An hour, each person", money(perPersonHourly)],
+            ["A minute, each person", money(perPersonHourly / 60)],
+            ["Every second", formatCurrency(ratePerSecond, currency, 4)],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="flex h-10 items-center justify-between border-t border-rule"
+            >
+              <dt className="text-muted">{label}</dt>
+              <dd className="font-medium">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <h3 className="mt-6 text-[14px] font-medium">Over the first hour</h3>
+        <div className="mt-3">
+          <Fuse elapsedSeconds={0} ratePerSecond={ratePerSecond} currency={currency} />
+        </div>
+        <p className="mt-4 text-[12px] text-muted">
+          A yearly figure is spread over {WORK_HOURS_PER_YEAR.toLocaleString("en-US")}{" "}
+          working hours (40 a week, 52 weeks).
+        </p>
+      </section>
     </form>
   );
 }

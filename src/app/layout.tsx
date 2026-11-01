@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
-import { BuiltWithLove } from "@/components/built-with";
 import { Footer } from "@/components/footer";
+import { Mark } from "@/components/mark";
 import {
   SEO_KEYWORDS,
   SITE_DESCRIPTION,
@@ -12,14 +12,10 @@ import {
   SOCIAL_IMAGE_PATH,
 } from "@/lib/site-metadata";
 
-const spaceGrotesk = Space_Grotesk({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-geist",
 });
 
 const metadataBase = new URL(SITE_URL);
@@ -67,6 +63,8 @@ export const metadata: Metadata = {
   },
 };
 
+// Canvas: a centred 1104px column (max-w-[1152px] less 2 x 24px padding).
+// Two-column rows split it 7fr / 5fr with one 12px gap: 637 + 12 + 455 = 1104.
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -74,19 +72,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${geistMono.variable} bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-white`}
-      >
-        <div className="relative min-h-screen overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white via-slate-100 to-white dark:from-[#0b1123] dark:via-[#0f172a] dark:to-[#0b1123]" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-rose-50/60 to-transparent opacity-60 dark:via-white/10" />
-          <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col">
-            <main className="flex flex-1 flex-col gap-10 px-6 pb-16 pt-14 sm:px-10">
-              {children}
-            </main>
-            <BuiltWithLove />
-            <Footer />
-          </div>
+      <body className={`${geist.variable} antialiased`}>
+        <div className="flex min-h-screen flex-col">
+          <header className="border-b border-border">
+            <div className="mx-auto flex h-12 max-w-[1152px] items-center justify-between px-4 sm:px-6">
+              <a
+                href="/"
+                className="flex items-center gap-2 text-[15px] font-medium text-ink"
+              >
+                <Mark />
+                BurnRate
+              </a>
+              <p className="text-[13px] text-muted">
+                Nothing leaves this device
+              </p>
+            </div>
+          </header>
+          <main className="mx-auto w-full max-w-[1152px] flex-1 px-4 pb-16 pt-8 sm:px-6 sm:pt-9">
+            {children}
+          </main>
+          <Footer />
         </div>
       </body>
     </html>
