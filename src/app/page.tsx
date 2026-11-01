@@ -149,7 +149,7 @@ export default function Home() {
       <>
         <TitleRow
           title="New meeting"
-          subline="Set who is in the room, then start the meter when the meeting starts."
+          subline="It could have been an email. Find out what it costs instead."
         />
         <SessionIntakeForm />
       </>
